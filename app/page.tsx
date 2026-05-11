@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ProductGrid } from "@/components/product-grid";
 
 export default function HomePage() {
@@ -14,9 +15,16 @@ export default function HomePage() {
               Concurrency-safe reservation system
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            PostgreSQL Row Locking Active
+          <div className="flex items-center gap-3">
+            <Link href="/reservations">
+              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-border bg-background hover:bg-muted transition-colors">
+                📋 Reservations
+              </button>
+            </Link>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Row Locking Active
+            </div>
           </div>
         </div>
       </header>

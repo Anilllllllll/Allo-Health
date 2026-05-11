@@ -123,6 +123,34 @@ export function useReleaseReservation() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["reservations"] });
     },
+  });
+}
+
+// ============================================================
+// Reservation with product/warehouse details
+// ============================================================
+
+export interface ReservationWithDetails extends Reservation {
+  product: {
+    id: string;
+    name: string;
+    sku: string;
+    price: number;
+  };
+  warehouse: {
+    id: string;
+    name: string;
+    location: string;
+  };
+}
+
+/** Fetch all reservations */
+export function useReservations() {
+  return useQuery<ReservationWithDetails[]>({
+    queryKey: ["reservations"],
+    queryFn: () => fetchJSON("/api/reservations"),
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 }

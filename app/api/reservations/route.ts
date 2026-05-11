@@ -3,6 +3,31 @@ import { createReservationSchema } from "@/schemas/reservation";
 import { reserveStock } from "@/lib/reservations/service";
 import { AppError } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db";
+
+// ============================================================
+// GET /api/reservations — List recent reservations
+// ============================================================
+export async function GET() {
+  try {
+    const reservations = await prisma.reservation.findMany({
+      include: {
+        product: true,
+        warehouse: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    return NextResponse.json(reservations);
+  } catch (error) {
+    console.error("GET /api/reservations error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch reservations" },
+      { status: 500 }
+    );
+  }
+}
 
 // ============================================================
 // POST /api/reservations — Reserve stock

@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "test:concurrency": "tsx tests/concurrency.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

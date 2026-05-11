@@ -1,0 +1,100 @@
+// ============================================================
+// Prisma Schema — Inventory Reservation System
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
+
+// ============================================================
+// Models
+// ============================================================
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  sku         String   @unique
+  price       Float
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stocks       Stock[]
+  reservations Reservation[]
+
+  @@index([sku])
+}
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stocks       Stock[]
+  reservations Reservation[]
+}
+
+model Stock {
+  id            String   @id @default(uuid())
+  productId     String
+  warehouseId   String
+  totalUnits    Int      @default(0)
+  reservedUnits Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  // Each product can exist only once per warehouse
+  @@unique([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
+model Reservation {
+  id          String            @id @default(uuid())
+  productId   String
+  warehouseId String
+  quantity    Int
+  status      ReservationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([expiresAt])
+  @@index([productId, warehouseId])
+}
+
+model IdempotencyKey {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  response   Json
+  statusCode Int
+  createdAt  DateTime @default(now())
+
+  // Auto-expire after 24 hours (cleaned up by cron)
+  @@index([createdAt])
+}

@@ -105,8 +105,11 @@ export async function reserveStock(
       return reservation;
     },
     {
-      // Serializable isolation level ensures strongest consistency
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      // ReadCommitted + FOR UPDATE = correct locking strategy.
+      // FOR UPDATE provides row-level locks that queue concurrent
+      // transactions. Serializable is too aggressive and causes
+      // false-positive aborts under high contention.
+      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
       timeout: 10000, // 10 second timeout
     }
   );

@@ -4,6 +4,7 @@ import { reserveStock } from "@/lib/reservations/service";
 import { AppError } from "@/lib/errors";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { withIdempotency } from "@/lib/idempotency";
 
 // ============================================================
 // GET /api/reservations — List recent reservations
@@ -41,26 +42,29 @@ export async function GET() {
 // modified the same stock row, which is the same outcome.
 // ============================================================
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
+  // Wrap with idempotency — if the client sends an Idempotency-Key header,
+  // duplicate requests return the cached response without re-executing.
+  return withIdempotency(request, async () => {
+    try {
+      const body = await request.json();
 
-    // Validate request body
-    const parsed = createReservationSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Validation failed",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
-    }
+      // Validate request body
+      const parsed = createReservationSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json(
+          {
+            error: "Validation failed",
+            details: parsed.error.flatten().fieldErrors,
+          },
+          { status: 400 }
+        );
+      }
 
-    // Execute the reservation (with row-level locking)
-    const reservation = await reserveStock(parsed.data);
+      // Execute the reservation (with row-level locking)
+      const reservation = await reserveStock(parsed.data);
 
-    return NextResponse.json(reservation, { status: 201 });
-  } catch (error) {
+      return NextResponse.json(reservation, { status: 201 });
+    } catch (error) {
     // Application-level errors (InsufficientStockError, etc.)
     if (error instanceof AppError) {
       return NextResponse.json(
@@ -108,4 +112,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  }); // end withIdempotency
 }

@@ -291,19 +291,20 @@ npm run db:seed && npm run test:concurrency
 5. **Two-layer expiry (lazy + cron) instead of just one**
    - Lazy expiry gives instant feedback when confirming. Cron catches abandoned checkouts. Together they ensure no reservation blocks stock indefinitely.
 
+6. **Idempotency via Upstash Redis (Bonus)**
+   - The `POST /api/reservations` and `POST /api/reservations/:id/confirm` endpoints are wrapped with a `withIdempotency()` middleware. If the client sends an `Idempotency-Key` header, the server checks Redis for a cached response. On cache hit, it returns the original response without re-executing the side effect. On cache miss, it executes normally and caches the response with a 24-hour TTL. If Redis is unavailable, the middleware degrades gracefully — the request executes normally without deduplication.
+
 ### What I'd do differently with more time
 
-1. **Implement the idempotency bonus** — The `IdempotencyKey` model and Redis client are set up, but the middleware to intercept duplicate requests via `Idempotency-Key` header is not wired. I'd add a middleware that hashes the request body + idempotency key, checks Redis for a cached response, and returns it without re-executing the side effect.
+1. **Optimistic UI updates** — Currently the UI waits for the server response before updating. With optimistic updates via React Query's `onMutate`, the UI would feel snappier.
 
-2. **Optimistic UI updates** — Currently the UI waits for the server response before updating. With optimistic updates via React Query's `onMutate`, the UI would feel snappier.
+2. **WebSocket / Server-Sent Events for real-time stock** — Currently stock levels refresh on a 10-second stale timer. Real-time updates via WebSocket would show stock changes instantly across all connected users.
 
-3. **WebSocket / Server-Sent Events for real-time stock** — Currently stock levels refresh on a 10-second stale timer. Real-time updates via WebSocket would show stock changes instantly across all connected users.
+3. **Rate limiting** — The `RateLimitError` class exists but no actual rate limiting middleware is implemented. I'd use Upstash Redis with a sliding window rate limiter.
 
-4. **Rate limiting** — The `RateLimitError` class exists but no actual rate limiting middleware is implemented. I'd use Upstash Redis with a sliding window rate limiter.
+4. **Database connection pooling** — For production, I'd configure PgBouncer or Supabase's connection pooler more carefully, with appropriate pool sizes for the expected concurrent load.
 
-5. **Database connection pooling** — For production, I'd configure PgBouncer or Supabase's connection pooler more carefully, with appropriate pool sizes for the expected concurrent load.
-
-6. **E2E tests with Playwright** — The current tests are API-level. E2E tests would verify the full user flow: browse → reserve → see countdown → confirm/cancel.
+5. **E2E tests with Playwright** — The current tests are API-level. E2E tests would verify the full user flow: browse → reserve → see countdown → confirm/cancel.
 
 ## 📄 License
 

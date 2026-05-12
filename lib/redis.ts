@@ -5,20 +5,25 @@ import { Redis } from "@upstash/redis";
 // ============================================================
 // REST-based Redis client — works in serverless environments
 // (Vercel Functions, Edge) without persistent TCP connections.
+//
 // Used for:
 //   - Idempotency key caching (fast lookups)
-//   - Rate limiting
+//   - Rate limiting (future)
+//
+// If Redis env vars are missing, idempotency is silently
+// disabled — the app still works, just without deduplication.
 // ============================================================
 
-if (!process.env.UPSTASH_REDIS_REST_URL) {
-  throw new Error("UPSTASH_REDIS_REST_URL is not set");
+let redis: Redis | null = null;
+
+if (
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
 }
 
-if (!process.env.UPSTASH_REDIS_REST_TOKEN) {
-  throw new Error("UPSTASH_REDIS_REST_TOKEN is not set");
-}
-
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
+export { redis };

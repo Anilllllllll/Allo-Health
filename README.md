@@ -2,7 +2,7 @@
 
 A production-grade inventory reservation system built for e-commerce, demonstrating **concurrency-safe stock management** using PostgreSQL row-level locking.
 
-**Live URL:** [https://allo-health.vercel.app](https://allo-health.vercel.app)
+**Live URL:** [https://allo-health-green.vercel.app](https://allo-health-green.vercel.app)
 
 ## 🎯 Problem Statement
 

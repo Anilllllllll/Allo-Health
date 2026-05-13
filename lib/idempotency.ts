@@ -59,6 +59,7 @@ export async function withIdempotency(
 
   // Redis not configured? Execute normally
   if (!redis) {
+    console.log("[Idempotency] Redis not configured, skipping");
     return handler();
   }
 
@@ -91,7 +92,7 @@ export async function withIdempotency(
 
   // ── Step 4: Cache the response in Redis ──
   try {
-    // Clone the response to read the body
+    // Clone the response to read the body without consuming it
     const clonedResponse = response.clone();
     const body = await clonedResponse.json();
 
@@ -111,9 +112,15 @@ export async function withIdempotency(
     console.error("[Idempotency] Redis write error:", error);
   }
 
-  // Add header so the client knows this was a fresh execution
-  response.headers.set("X-Idempotency-Status", "executed");
-  response.headers.set("X-Idempotency-Key", idempotencyKey);
-
-  return response;
+  // ── Step 5: Return the original response with idempotency headers ──
+  // We create a new response to ensure headers are properly set
+  // (NextResponse headers can be immutable in some contexts)
+  const originalBody = await response.clone().json();
+  return NextResponse.json(originalBody, {
+    status: response.status,
+    headers: {
+      "X-Idempotency-Status": "executed",
+      "X-Idempotency-Key": idempotencyKey,
+    },
+  });
 }
